@@ -24,15 +24,21 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: Verifikasi FFmpeg
+    # --- DOWNLOAD FFMPEG OTOMATIS (AGAR ANDA TIDAK PERLU UPLOAD 70MB) ---
+    - name: Download & Setup FFmpeg Mac (Auto)
       run: |
-        ls -R bin/mac/
+        mkdir -p bin/mac
+        curl -L -o ffmpeg_mac.zip "https://evermeet.cx/ffmpeg/getrelease/zip"
+        unzip -o ffmpeg_mac.zip
+        mv ffmpeg bin/mac/
         chmod +x bin/mac/ffmpeg
+        ls -l bin/mac/
 
     - name: Build Application with PyInstaller
       run: |
-        # Perintah ini memasukkan ffmpeg ke dalam folder internal aplikasi
-        # Format add-binary di Mac adalah "sumber:tujuan"
+        # PERHATIKAN BARIS ICON DI BAWAH INI
+        # Pastikan nama file "app_icon.icns" SESUAI dengan nama file icon yang Anda upload di GitHub
+        
         pyinstaller --noconfirm --clean --windowed \
           --name "IntisariClips" \
           --icon "app_icon.icns" \
@@ -40,11 +46,9 @@ jobs:
           --collect-all customtkinter \
           AutoClipintisari.py
 
-    # Tahap ini penting: Membuat ZIP yang mempertahankan permission file
     - name: Create ZIP Bundle
       run: |
         cd dist
-        # Menggunakan ditto adalah cara standar Mac untuk zip aplikasi agar tidak "corrupt"
         ditto -c -k --keepParent "IntisariClips.app" "IntisariClips-MacOS.zip"
 
     - name: Upload Artifact
