@@ -1,0 +1,54 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Verifikasi FFmpeg
+      run: |
+        ls -R bin/mac/
+        chmod +x bin/mac/ffmpeg
+
+    - name: Build Application with PyInstaller
+      run: |
+        # Perintah ini memasukkan ffmpeg ke dalam folder internal aplikasi
+        # Format add-binary di Mac adalah "sumber:tujuan"
+        pyinstaller --noconfirm --clean --windowed \
+          --name "IntisariClips" \
+          --icon "app_icon.icns" \
+          --add-binary "bin/mac/ffmpeg:bin/mac" \
+          --collect-all customtkinter \
+          AutoClipintisari.py
+
+    # Tahap ini penting: Membuat ZIP yang mempertahankan permission file
+    - name: Create ZIP Bundle
+      run: |
+        cd dist
+        # Menggunakan ditto adalah cara standar Mac untuk zip aplikasi agar tidak "corrupt"
+        ditto -c -k --keepParent "IntisariClips.app" "IntisariClips-MacOS.zip"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: IntisariClips-MacOS
+        path: dist/IntisariClips-MacOS.zip
